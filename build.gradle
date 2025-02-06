@@ -1,0 +1,65 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.cabin.express'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    libDirName = 'lib'
+    mainClassName = project.hasProperty("mainClass") ? project.getProperty("mainClass") : 'com.cabin.express.SimpleServlet'
+    gradleVersion = gradleVersion = gradle.gradleVersion
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+
+dependencies {
+    // Jetty Server
+    implementation 'org.eclipse.jetty:jetty-server:11.0.15'
+    implementation 'org.eclipse.jetty:jetty-servlet:11.0.15'
+
+    // Servlet API
+    implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+
+    compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
+
+}
+
+
+test {
+    useJUnitPlatform()
+}
+
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$buildDir/libs/libs"
+}
+
+jar {
+    dependsOn copyDependencies
+}
+
+jar {
+    manifest {
+        attributes(
+                'Gradle-Version': gradle.gradleVersion, // Fix to reference the Gradle version
+                'Created-By': System.getProperty("java.version") + " (Java)",
+                'Class-Path': configurations.runtimeClasspath.files.collect {
+                    "libs/" + it.name // Adjusting the path prefix to match the final layout
+                }.join(' '),
+                'Main-Class': mainClassName // Ensure `mainClassName` is set in your Gradle file
+        )
+    }
+    // Optional: Configure the base name for the JAR file
+    if (project.hasProperty('jarBaseName')) {
+        archiveBaseName.set(project.getProperty('jarBaseName')) // Gradle 7.x+ syntax
+    }
+}
